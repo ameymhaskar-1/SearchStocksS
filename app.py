@@ -1,5 +1,6 @@
 import streamlit as st
 import io
+from datetime import datetime
 from stock_utils import fetch_stock_data, generate_excel
 
 # Page Configuration
@@ -46,10 +47,14 @@ if analyze_btn:
             
             # Display Preview
             st.subheader("Data Preview")
-            st.dataframe(df.style.applymap(
+            
+            # Updated .map() function for newer Pandas versions
+            styled_df = df.style.map(
                 lambda x: 'color: green' if isinstance(x, (int, float)) and x > 0 else ('color: red' if isinstance(x, (int, float)) and x < 0 else ''),
                 subset=['1M Return %', '3M Return %']
-            ), use_container_width=True)
+            )
+            
+            st.dataframe(styled_df, use_container_width=True)
 
             # Generate Excel
             output = io.BytesIO()
