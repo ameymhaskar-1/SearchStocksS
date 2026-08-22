@@ -51,7 +51,7 @@ if analyze_btn:
             # Updated .map() function for newer Pandas versions
             styled_df = df.style.map(
                 lambda x: 'color: green' if isinstance(x, (int, float)) and x > 0 else ('color: red' if isinstance(x, (int, float)) and x < 0 else ''),
-                subset=['1M Return %', '3M Return %']
+                subset=['1W Return %', '1M Return %', '3M Return %']
             )
             
             st.dataframe(styled_df, use_container_width=True)
