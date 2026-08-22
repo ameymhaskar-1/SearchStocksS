@@ -48,8 +48,8 @@ def fetch_stock_data(tickers):
             stock = yf.Ticker(ticker)
             info = stock.info
             
-            # Fetch historical data for 1M and 3M
-            hist = stock.history(period="4mo") # Fetch 4 months to ensure enough data
+            # Fetch historical data for 4M to ensure enough data
+            hist = stock.history(period="4mo") 
             if hist.empty:
                 failed_names.append(ticker_input)
                 continue
@@ -59,11 +59,13 @@ def fetch_stock_data(tickers):
             high_52w = info.get('fiftyTwoWeekHigh')
             low_52w = info.get('fiftyTwoWeekLow')
             
-            # Historical Prices (Approx 21 trading days = 1 Month, 63 = 3 Months)
+            # Historical Prices (Approx 5 trading days = 1 Week, 21 trading days = 1 Month, 63 = 3 Months)
+            price_1w = hist['Close'].iloc[-6] if len(hist) >= 6 else hist['Close'].iloc[0]
             price_1m = hist['Close'].iloc[-22] if len(hist) >= 22 else hist['Close'].iloc[0]
             price_3m = hist['Close'].iloc[-64] if len(hist) >= 64 else hist['Close'].iloc[0]
 
             # Calculations
+            ret_1w = ((cmp - price_1w) / price_1w) * 100
             ret_1m = ((cmp - price_1m) / price_1m) * 100
             ret_3m = ((cmp - price_3m) / price_3m) * 100
             dist_high = ((cmp - high_52w) / high_52w) * 100 if high_52w else 0
@@ -85,8 +87,10 @@ def fetch_stock_data(tickers):
                 "CMP": round(cmp, 2),
                 "52W High": round(high_52w, 2) if high_52w else 0,
                 "52W Low": round(low_52w, 2) if low_52w else 0,
+                "1W Price": round(price_1w, 2),
                 "1M Price": round(price_1m, 2),
                 "3M Price": round(price_3m, 2),
+                "1W Return %": round(ret_1w, 2),
                 "1M Return %": round(ret_1m, 2),
                 "3M Return %": round(ret_3m, 2),
                 "Distance from 52W High %": round(dist_high, 2),
@@ -118,12 +122,12 @@ def generate_excel(df):
         cell.alignment = Alignment(horizontal="center")
 
     # Conditional Formatting for Returns (Row-based loop)
-    # Col H (8) = 1M Return, Col I (9) = 3M Return
+    # Col I (9) = 1W Return, Col J (10) = 1M Return, Col K (11) = 3M Return
     red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
     green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
 
     for row in range(2, ws1.max_row + 1):
-        for col_idx in [8, 9]: # 1M and 3M Return columns
+        for col_idx in [9, 10, 11]: # 1W, 1M and 3M Return columns
             cell = ws1.cell(row=row, column=col_idx)
             if cell.value and cell.value > 0:
                 cell.fill = green_fill
@@ -145,6 +149,7 @@ def generate_excel(df):
     ws2 = wb.create_sheet("Pivot Summary")
     pivot = df.groupby('Momentum').agg({
         'Momentum': 'count',
+        '1W Return %': 'mean',
         '1M Return %': 'mean',
         '3M Return %': 'mean'
     }).rename(columns={'Momentum': 'Count'}).reset_index()
