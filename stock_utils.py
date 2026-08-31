@@ -59,6 +59,10 @@ def fetch_stock_data(tickers):
             high_52w = info.get('fiftyTwoWeekHigh')
             low_52w = info.get('fiftyTwoWeekLow')
             
+            # Market Cap Calculation (Convert to ₹ Cr)
+            market_cap = info.get('marketCap')
+            market_cap_cr = round(market_cap / 1e7, 2) if market_cap else None
+            
             # Historical Prices (Approx 5 trading days = 1 Week, 21 trading days = 1 Month, 63 = 3 Months)
             price_1w = hist['Close'].iloc[-6] if len(hist) >= 6 else hist['Close'].iloc[0]
             price_1m = hist['Close'].iloc[-22] if len(hist) >= 22 else hist['Close'].iloc[0]
@@ -85,6 +89,7 @@ def fetch_stock_data(tickers):
                 "Company Name": info.get('longName', ticker_input),
                 "NSE Ticker": ticker,
                 "CMP": round(cmp, 2),
+                "Market Cap (₹ Cr)": market_cap_cr,
                 "52W High": round(high_52w, 2) if high_52w else 0,
                 "52W Low": round(low_52w, 2) if low_52w else 0,
                 "1W Price": round(price_1w, 2),
@@ -122,12 +127,12 @@ def generate_excel(df):
         cell.alignment = Alignment(horizontal="center")
 
     # Conditional Formatting for Returns (Row-based loop)
-    # Col I (9) = 1W Return, Col J (10) = 1M Return, Col K (11) = 3M Return
+    # Col J (10) = 1W Return, Col K (11) = 1M Return, Col L (12) = 3M Return
     red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
     green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
 
     for row in range(2, ws1.max_row + 1):
-        for col_idx in [9, 10, 11]: # 1W, 1M and 3M Return columns
+        for col_idx in [10, 11, 12]: # 1W, 1M and 3M Return columns
             cell = ws1.cell(row=row, column=col_idx)
             if cell.value and cell.value > 0:
                 cell.fill = green_fill
